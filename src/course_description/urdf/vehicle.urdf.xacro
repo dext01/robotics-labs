@@ -1,0 +1,148 @@
+<?xml version="1.0"?>
+<!--
+  course_ackermann: Ackermann vehicle for PR06.
+  Units: SI (m, kg, s, rad). Axes per REP-103: x forward, y left, z up.
+  base_link is the centre of the wheelbase at wheel-axle height.
+  Sizes follow models/course_ackermann/model.sdf of the course kit
+  (wheelbase 0.8 m); only dimensions are taken, no Gazebo plugins.
+-->
+<robot name="course_ackermann" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ===== Parameters ===== -->
+  <xacro:property name="wheelbase"       value="0.8"/>
+  <xacro:property name="track_width"     value="0.5"/>
+  <xacro:property name="wheel_radius"    value="0.1"/>
+  <xacro:property name="wheel_width"     value="0.06"/>
+  <xacro:property name="wheel_mass"      value="0.8"/>
+  <xacro:property name="max_steer"       value="0.45"/>
+
+  <xacro:property name="chassis_length"  value="1.0"/>
+  <xacro:property name="chassis_width"   value="0.4"/>
+  <xacro:property name="chassis_height"  value="0.15"/>
+  <xacro:property name="chassis_z"       value="0.1"/>
+  <xacro:property name="chassis_mass"    value="12.0"/>
+
+  <xacro:property name="chassis_top"     value="${chassis_z + chassis_height / 2}"/>
+
+  <xacro:property name="camera_x" value="${chassis_length / 2 - 0.03}"/>
+  <xacro:property name="camera_z" value="${chassis_top + 0.05}"/>
+  <xacro:property name="lidar_x"  value="0.15"/>
+  <xacro:property name="lidar_z"  value="${chassis_top + 0.05}"/>
+  <xacro:property name="imu_x"    value="0.0"/>
+  <xacro:property name="imu_z"    value="${chassis_z}"/>
+
+  <!-- ===== Materials ===== -->
+  <material name="body"><color rgba="0.15 0.35 0.75 1"/></material>
+  <material name="tire"><color rgba="0.1 0.1 0.1 1"/></material>
+  <material name="sensor"><color rgba="0.9 0.5 0.1 1"/></material>
+
+  <!-- ===== Inertia helpers ===== -->
+  <xacro:macro name="box_inertial" params="m x y z *origin">
+    <inertial>
+      <xacro:insert_block name="origin"/>
+      <mass value="${m}"/>
+      <inertia ixx="${m * (y*y + z*z) / 12}" ixy="0" ixz="0"
+               iyy="${m * (x*x + z*z) / 12}" iyz="0"
+               izz="${m * (x*x + y*y) / 12}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- solid cylinder, axis along its own z -->
+  <xacro:macro name="cylinder_inertial" params="m r h *origin">
+    <inertial>
+      <xacro:insert_block name="origin"/>
+      <mass value="${m}"/>
+      <inertia ixx="${m * (3*r*r + h*h) / 12}" ixy="0" ixz="0"
+               iyy="${m * (3*r*r + h*h) / 12}" iyz="0"
+               izz="${m * r * r / 2}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- ===== Chassis ===== -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 ${chassis_z}" rpy="0 0 0"/>
+      <geometry><box size="${chassis_length} ${chassis_width} ${chassis_height}"/></geometry>
+      <material name="body"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${chassis_z}" rpy="0 0 0"/>
+      <geometry><box size="${chassis_length} ${chassis_width} ${chassis_height}"/></geometry>
+    </collision>
+    <xacro:box_inertial m="${chassis_mass}" x="${chassis_length}" y="${chassis_width}" z="${chassis_height}">
+      <origin xyz="0 0 ${chassis_z}" rpy="0 0 0"/>
+    </xacro:box_inertial>
+  </link>
+
+  <!-- ===== Wheels ===== -->
+  <xacro:macro name="wheel" params="name parent x y">
+    <link name="${name}_wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+        <material name="tire"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+      </collision>
+      <xacro:cylinder_inertial m="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}">
+        <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      </xacro:cylinder_inertial>
+    </link>
+    <joint name="${name}_wheel_joint" type="continuous">
+      <parent link="${parent}"/>
+      <child link="${name}_wheel_link"/>
+      <origin xyz="${x} ${y} 0" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- front wheels hang on a steering knuckle that rotates about z -->
+  <xacro:macro name="steered_wheel" params="name y">
+    <link name="${name}_steering_link">
+      <xacro:box_inertial m="0.2" x="0.04" y="0.04" z="0.04">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+      </xacro:box_inertial>
+    </link>
+    <joint name="${name}_steering_joint" type="revolute">
+      <parent link="base_link"/>
+      <child link="${name}_steering_link"/>
+      <origin xyz="${wheelbase / 2} ${y} 0" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-max_steer}" upper="${max_steer}" effort="10.0" velocity="2.0"/>
+    </joint>
+    <xacro:wheel name="${name}" parent="${name}_steering_link" x="0" y="0"/>
+  </xacro:macro>
+
+  <xacro:wheel name="rear_left"  parent="base_link" x="${-wheelbase / 2}" y="${ track_width / 2}"/>
+  <xacro:wheel name="rear_right" parent="base_link" x="${-wheelbase / 2}" y="${-track_width / 2}"/>
+  <xacro:steered_wheel name="front_left"  y="${ track_width / 2}"/>
+  <xacro:steered_wheel name="front_right" y="${-track_width / 2}"/>
+
+  <!-- ===== Sensors (fixed joints, published by robot_state_publisher on /tf_static) ===== -->
+  <xacro:macro name="sensor_link" params="name parent x y z size mass">
+    <link name="${name}">
+      <visual>
+        <geometry><box size="${size} ${size} ${size}"/></geometry>
+        <material name="sensor"/>
+      </visual>
+      <collision>
+        <geometry><box size="${size} ${size} ${size}"/></geometry>
+      </collision>
+      <xacro:box_inertial m="${mass}" x="${size}" y="${size}" z="${size}">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+      </xacro:box_inertial>
+    </link>
+    <joint name="${name}_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${name}"/>
+      <origin xyz="${x} ${y} ${z}" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:sensor_link name="camera_link" parent="base_link" x="${camera_x}" y="0" z="${camera_z}" size="0.04" mass="0.1"/>
+  <xacro:sensor_link name="lidar_link"  parent="base_link" x="${lidar_x}"  y="0" z="${lidar_z}"  size="0.07" mass="0.3"/>
+  <xacro:sensor_link name="imu_link"    parent="base_link" x="${imu_x}"    y="0" z="${imu_z}"    size="0.02" mass="0.02"/>
+
+</robot>
