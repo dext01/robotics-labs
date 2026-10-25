@@ -1,0 +1,16 @@
+build/
+install/
+log/
+__pycache__/
+*.pyc
+.pytest_cache/
+# recordings: only metadata/info go to git
+fixtures/
+evidence/pr05/bag/
+*.mcap
+*.db3
+# SROS2 keystore (PR06 extension)
+keystore/
+private/
+*.key.pem
+.DS_Store

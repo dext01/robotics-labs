@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    container: osrf/ros:lyrical-desktop-full
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get upgrade -y --with-new-pkgs
+          apt-get install -y ros-lyrical-ackermann-msgs ros-lyrical-ros-gz \
+            ros-lyrical-rosbag2-storage-mcap liburdfdom-tools python3-pytest python3-yaml
+      - name: Build
+        run: |
+          source /opt/ros/lyrical/setup.bash
+          colcon build --symlink-install
+      - name: Test
+        run: |
+          source /opt/ros/lyrical/setup.bash
+          source install/setup.bash
+          colcon test --event-handlers console_direct+
+          colcon test-result --verbose
+      - name: Course checks
+        run: |
+          if [ -f .course-kit/v1/tools/check_practice.py ]; then
+            for p in PR05 PR06 PR07; do
+              python3 .course-kit/v1/tools/check_practice.py "$p" --submission .
+            done
+          else
+            echo "::warning::.course-kit/v1 is missing; check_practice.py skipped"
+          fi
