@@ -1,0 +1,15 @@
+# QoS overrides for the ROS side of ros_gz_bridge (contracts/topics.md):
+# camera, lidar, IMU = sensor data (best effort, keep last); odom/cmd = reliable (default).
+# Verify with `ros2 topic info -v` — the overrides only work if the bridge
+# publisher enables qos_overriding_options.
+/**:
+  ros__parameters:
+    qos_overrides:
+      /vehicle/camera/image_raw:
+        publisher: {reliability: best_effort, history: keep_last, depth: 5}
+      /vehicle/camera/camera_info:
+        publisher: {reliability: best_effort, history: keep_last, depth: 5}
+      /vehicle/scan:
+        publisher: {reliability: best_effort, history: keep_last, depth: 5}
+      /vehicle/imu:
+        publisher: {reliability: best_effort, history: keep_last, depth: 5}

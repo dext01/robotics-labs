@@ -1,0 +1,63 @@
+{
+  "kit_version": "TODO: версия course kit (.course-kit/v1/VERSION или commit)",
+  "world": "src/course_simulation/worlds/mcity-minimal.sdf",
+  "real_time_factor": "TODO: из gz stats / gz topic -e -t /stats",
+  "changed_sensor_parameter": {
+    "sensor": "camera",
+    "parameter": "update_rate",
+    "baseline": 20,
+    "new": 15
+  },
+  "namespace": "/sim (ROS-ноды); контрактные топики остаются абсолютными",
+  "sensors": [
+    {
+      "name": "camera",
+      "topic": "/vehicle/camera/image_raw",
+      "gz_topic": "/model/course_ackermann/camera",
+      "type": "sensor_msgs/msg/Image",
+      "frame_id": "camera_link",
+      "stamp_source": "simulation time (/clock)",
+      "qos": "best_effort, keep_last 5",
+      "declared_rate_hz": 15,
+      "measured_rate_hz": null
+    },
+    {
+      "name": "lidar",
+      "topic": "/vehicle/scan",
+      "gz_topic": "/model/course_ackermann/scan",
+      "type": "sensor_msgs/msg/LaserScan",
+      "frame_id": "lidar_link",
+      "stamp_source": "simulation time (/clock)",
+      "qos": "best_effort, keep_last 5",
+      "declared_rate_hz": 10,
+      "measured_rate_hz": null
+    },
+    {
+      "name": "imu",
+      "topic": "/vehicle/imu",
+      "gz_topic": "/model/course_ackermann/imu",
+      "type": "sensor_msgs/msg/Imu",
+      "frame_id": "imu_link",
+      "stamp_source": "simulation time (/clock)",
+      "qos": "best_effort, keep_last 5",
+      "declared_rate_hz": 100,
+      "measured_rate_hz": null
+    },
+    {
+      "name": "odometry",
+      "topic": "/vehicle/odom",
+      "source_topic": "/vehicle/odom_gz",
+      "gz_topic": "/model/course_ackermann/odometry",
+      "type": "nav_msgs/msg/Odometry",
+      "source_frame_id": "course_ackermann/odom",
+      "source_child_frame_id": "course_ackermann/base_link",
+      "frame_id": "odom",
+      "child_frame_id": "base_link",
+      "stamp_source": "simulation time (/clock)",
+      "qos": "reliable, keep_last 10",
+      "declared_rate_hz": 50,
+      "measured_rate_hz": null
+    }
+  ],
+  "rate_notes": "TODO: сопоставить измеренные частоты с RTF и нагрузкой"
+}

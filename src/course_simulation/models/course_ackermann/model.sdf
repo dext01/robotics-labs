@@ -1,0 +1,194 @@
+<?xml version="1.0"?>
+<!--
+  course_ackermann (course_simulation copy).
+  Geometry matches src/course_description/urdf/vehicle.urdf.xacro:
+  wheelbase 0.8 m, track 0.5 m, wheel radius 0.1 m, steering limit 0.45 rad.
+  Changed sensor parameter vs. the baseline kit: camera update_rate 20 -> 15 Hz.
+-->
+<sdf version="1.9">
+  <model name="course_ackermann">
+
+    <link name="base_link">
+      <pose>0 0 0.1 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0.1 0 0 0</pose>
+        <mass>12.0</mass>
+        <inertia><ixx>0.1825</ixx><iyy>1.0225</iyy><izz>1.16</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+      </inertial>
+      <visual name="chassis_visual">
+        <pose>0 0 0.1 0 0 0</pose>
+        <geometry><box><size>1.0 0.4 0.15</size></box></geometry>
+        <material><diffuse>0.15 0.35 0.75 1</diffuse></material>
+      </visual>
+      <collision name="chassis_collision">
+        <pose>0 0 0.1 0 0 0</pose>
+        <geometry><box><size>1.0 0.4 0.15</size></box></geometry>
+      </collision>
+    </link>
+
+    <!-- ===== sensors ===== -->
+    <link name="camera_link">
+      <pose relative_to="base_link">0.47 0 0.225 0 0 0</pose>
+      <inertial><mass>0.1</mass><inertia><ixx>2.7e-5</ixx><iyy>2.7e-5</iyy><izz>2.7e-5</izz></inertia></inertial>
+      <visual name="v"><geometry><box><size>0.04 0.04 0.04</size></box></geometry></visual>
+      <sensor name="camera" type="camera">
+        <always_on>1</always_on>
+        <update_rate>15</update_rate>
+        <visualize>false</visualize>
+        <topic>/model/course_ackermann/camera</topic>
+        <gz_frame_id>camera_link</gz_frame_id>
+        <camera>
+          <horizontal_fov>1.047</horizontal_fov>
+          <image><width>640</width><height>480</height><format>R8G8B8</format></image>
+          <clip><near>0.05</near><far>50</far></clip>
+        </camera>
+      </sensor>
+    </link>
+    <joint name="camera_link_joint" type="fixed">
+      <parent>base_link</parent><child>camera_link</child>
+    </joint>
+
+    <link name="lidar_link">
+      <pose relative_to="base_link">0.15 0 0.225 0 0 0</pose>
+      <inertial><mass>0.3</mass><inertia><ixx>2.45e-4</ixx><iyy>2.45e-4</iyy><izz>2.45e-4</izz></inertia></inertial>
+      <visual name="v"><geometry><cylinder><radius>0.035</radius><length>0.07</length></cylinder></geometry></visual>
+      <sensor name="lidar" type="gpu_lidar">
+        <always_on>1</always_on>
+        <update_rate>10</update_rate>
+        <visualize>false</visualize>
+        <topic>/model/course_ackermann/scan</topic>
+        <gz_frame_id>lidar_link</gz_frame_id>
+        <lidar>
+          <scan>
+            <horizontal><samples>360</samples><resolution>1</resolution>
+              <min_angle>-3.14159</min_angle><max_angle>3.14159</max_angle></horizontal>
+            <vertical><samples>1</samples><resolution>1</resolution>
+              <min_angle>0</min_angle><max_angle>0</max_angle></vertical>
+          </scan>
+          <range><min>0.12</min><max>12.0</max><resolution>0.01</resolution></range>
+        </lidar>
+      </sensor>
+    </link>
+    <joint name="lidar_link_joint" type="fixed">
+      <parent>base_link</parent><child>lidar_link</child>
+    </joint>
+
+    <link name="imu_link">
+      <pose relative_to="base_link">0 0 0.1 0 0 0</pose>
+      <inertial><mass>0.02</mass><inertia><ixx>1.3e-6</ixx><iyy>1.3e-6</iyy><izz>1.3e-6</izz></inertia></inertial>
+      <sensor name="imu" type="imu">
+        <always_on>1</always_on>
+        <update_rate>100</update_rate>
+        <topic>/model/course_ackermann/imu</topic>
+        <gz_frame_id>imu_link</gz_frame_id>
+      </sensor>
+    </link>
+    <joint name="imu_link_joint" type="fixed">
+      <parent>base_link</parent><child>imu_link</child>
+    </joint>
+
+    <!-- ===== wheels: cylinder axis along y via roll -pi/2 ===== -->
+    <link name="rear_left_wheel_link">
+      <pose relative_to="base_link">-0.4 0.25 0 -1.5708 0 0</pose>
+      <inertial><mass>0.8</mass><inertia><ixx>0.00224</ixx><iyy>0.00224</iyy><izz>0.004</izz></inertia></inertial>
+      <visual name="v"><geometry><cylinder><radius>0.1</radius><length>0.06</length></cylinder></geometry>
+        <material><diffuse>0.1 0.1 0.1 1</diffuse></material></visual>
+      <collision name="c"><geometry><cylinder><radius>0.1</radius><length>0.06</length></cylinder></geometry>
+        <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface></collision>
+    </link>
+    <joint name="rear_left_wheel_joint" type="revolute">
+      <parent>base_link</parent><child>rear_left_wheel_link</child>
+      <axis><xyz expressed_in="__model__">0 1 0</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit></axis>
+    </joint>
+
+    <link name="rear_right_wheel_link">
+      <pose relative_to="base_link">-0.4 -0.25 0 -1.5708 0 0</pose>
+      <inertial><mass>0.8</mass><inertia><ixx>0.00224</ixx><iyy>0.00224</iyy><izz>0.004</izz></inertia></inertial>
+      <visual name="v"><geometry><cylinder><radius>0.1</radius><length>0.06</length></cylinder></geometry>
+        <material><diffuse>0.1 0.1 0.1 1</diffuse></material></visual>
+      <collision name="c"><geometry><cylinder><radius>0.1</radius><length>0.06</length></cylinder></geometry>
+        <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface></collision>
+    </link>
+    <joint name="rear_right_wheel_joint" type="revolute">
+      <parent>base_link</parent><child>rear_right_wheel_link</child>
+      <axis><xyz expressed_in="__model__">0 1 0</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit></axis>
+    </joint>
+
+    <link name="front_left_steering_link">
+      <pose relative_to="base_link">0.4 0.25 0 0 0 0</pose>
+      <inertial><mass>0.2</mass><inertia><ixx>5.3e-5</ixx><iyy>5.3e-5</iyy><izz>5.3e-5</izz></inertia></inertial>
+    </link>
+    <joint name="front_left_steering_joint" type="revolute">
+      <parent>base_link</parent><child>front_left_steering_link</child>
+      <axis><xyz expressed_in="__model__">0 0 1</xyz>
+        <limit><lower>-0.45</lower><upper>0.45</upper></limit></axis>
+    </joint>
+    <link name="front_left_wheel_link">
+      <pose relative_to="front_left_steering_link">0 0 0 -1.5708 0 0</pose>
+      <inertial><mass>0.8</mass><inertia><ixx>0.00224</ixx><iyy>0.00224</iyy><izz>0.004</izz></inertia></inertial>
+      <visual name="v"><geometry><cylinder><radius>0.1</radius><length>0.06</length></cylinder></geometry>
+        <material><diffuse>0.1 0.1 0.1 1</diffuse></material></visual>
+      <collision name="c"><geometry><cylinder><radius>0.1</radius><length>0.06</length></cylinder></geometry>
+        <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface></collision>
+    </link>
+    <joint name="front_left_wheel_joint" type="revolute">
+      <parent>front_left_steering_link</parent><child>front_left_wheel_link</child>
+      <axis><xyz expressed_in="__model__">0 1 0</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit></axis>
+    </joint>
+
+    <link name="front_right_steering_link">
+      <pose relative_to="base_link">0.4 -0.25 0 0 0 0</pose>
+      <inertial><mass>0.2</mass><inertia><ixx>5.3e-5</ixx><iyy>5.3e-5</iyy><izz>5.3e-5</izz></inertia></inertial>
+    </link>
+    <joint name="front_right_steering_joint" type="revolute">
+      <parent>base_link</parent><child>front_right_steering_link</child>
+      <axis><xyz expressed_in="__model__">0 0 1</xyz>
+        <limit><lower>-0.45</lower><upper>0.45</upper></limit></axis>
+    </joint>
+    <link name="front_right_wheel_link">
+      <pose relative_to="front_right_steering_link">0 0 0 -1.5708 0 0</pose>
+      <inertial><mass>0.8</mass><inertia><ixx>0.00224</ixx><iyy>0.00224</iyy><izz>0.004</izz></inertia></inertial>
+      <visual name="v"><geometry><cylinder><radius>0.1</radius><length>0.06</length></cylinder></geometry>
+        <material><diffuse>0.1 0.1 0.1 1</diffuse></material></visual>
+      <collision name="c"><geometry><cylinder><radius>0.1</radius><length>0.06</length></cylinder></geometry>
+        <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface></collision>
+    </link>
+    <joint name="front_right_wheel_joint" type="revolute">
+      <parent>front_right_steering_link</parent><child>front_right_wheel_link</child>
+      <axis><xyz expressed_in="__model__">0 1 0</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit></axis>
+    </joint>
+
+    <!-- ===== controller: Twist in, controller odometry out ===== -->
+    <plugin filename="gz-sim-ackermann-steering-system" name="gz::sim::systems::AckermannSteering">
+      <left_joint>front_left_wheel_joint</left_joint>
+      <left_joint>rear_left_wheel_joint</left_joint>
+      <right_joint>front_right_wheel_joint</right_joint>
+      <right_joint>rear_right_wheel_joint</right_joint>
+      <left_steering_joint>front_left_steering_joint</left_steering_joint>
+      <right_steering_joint>front_right_steering_joint</right_steering_joint>
+      <kingpin_width>0.5</kingpin_width>
+      <steering_limit>0.45</steering_limit>
+      <wheel_base>0.8</wheel_base>
+      <wheel_separation>0.5</wheel_separation>
+      <wheel_radius>0.1</wheel_radius>
+      <min_velocity>-1.2</min_velocity>
+      <max_velocity>1.2</max_velocity>
+      <min_acceleration>-3</min_acceleration>
+      <max_acceleration>3</max_acceleration>
+      <topic>/model/course_ackermann/cmd_vel</topic>
+      <odom_topic>/model/course_ackermann/odometry</odom_topic>
+      <tf_topic>/model/course_ackermann/tf</tf_topic>
+      <frame_id>course_ackermann/odom</frame_id>
+      <child_frame_id>course_ackermann/base_link</child_frame_id>
+      <odom_publish_frequency>50</odom_publish_frequency>
+    </plugin>
+
+    <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+      <topic>/model/course_ackermann/joint_state</topic>
+    </plugin>
+  </model>
+</sdf>
